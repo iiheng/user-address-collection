@@ -4,17 +4,15 @@ import { Form, Input, Button, Cascader } from 'antd';
 
 const Home = () => {
   const [addressOptions, setAddressOptions] = useState([]);
-  const onFinish = (values) => {
-    // console.log('Success:', values);
-  
+  const onFinish = (values) => {  
     // Using fetch to send a POST request to the local server
-    fetch('https://adddressapi.gptmanage.top', {
+    fetch('http://127.0.0.1:8787', {
+    // fetch('https://adddressapi.gptmanage.top', {
       method: 'POST', // Specify the method
       headers: {
         'Content-Type': 'application/json', // Set the content type header so the server knows to expect JSON
       },
       body: JSON.stringify(values), // Convert the JavaScript object to a JSON string
-      
     })
     .then(response => {
       console.log("response",response)
@@ -119,9 +117,8 @@ const Home = () => {
         name="address"
         rules={[{ required: true, message: '请选择您的所在地区!' }]}
       >
-        <Cascader options={addressOptions} placeholder="请选择地址" />
+      <Cascader options={addressOptions} placeholder="请选择地址" />
       </Form.Item>
-
       <Form.Item
         label="详细地址"
         name="DetailAddress"
