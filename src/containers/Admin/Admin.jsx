@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Table } from 'antd';
+import { Table, Button ,Input} from 'antd';
 import './admin.css';
-
+import * as XLSX from 'xlsx';
 function Admin() {
-  const [data, setData] = useState([]);
+    const [data, setData] = useState([]);
+    const [searchText, setSearchText] = useState('');
+    const [filteredData, setFilteredData] = useState([]);
 
   useEffect(() => {
     // 使用fetch获取数据
     const fetchData = async () => {
         try {
-          const response = await fetch('http://127.0.0.1:8787/');
+          const response = await fetch('https://adddressapi.gptmanage.top/');
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -22,10 +24,17 @@ function Admin() {
           // 处理错误情况
         }
       };
-      
-
     fetchData();
   }, []); // 确保这个useEffect不会在组件更新时重新运行
+  useEffect(() => {
+    // 根据搜索文本过滤数据
+    const filtered = data.filter(entry =>
+      Object.values(entry).some(
+        value => typeof value === 'string' && value.includes(searchText)
+      )
+    );
+    setFilteredData(filtered);
+  }, [searchText, data]);
 
   const columns = [
     {
@@ -68,16 +77,40 @@ function Admin() {
       dataIndex: 'BankName',
       key: 'BankName',
     },
-    {
-      title: '唯一标识符',
-      dataIndex: 'UniqueIdentifier',
-      key: 'UniqueIdentifier',
-    },
   ];
+
+  const exportToExcel = () => {
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
+    const timeStr = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
+    const fileName = `地址数据${dateStr}_${timeStr}.xlsx`;
+  
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "DataExport");
+    XLSX.writeFile(wb, fileName);
+  };
+  const paginationConfig = {
+    pageSize: 10, // 每页显示15条记录
+  };
 
   return (
     <div className="admin">
-      <Table dataSource={data} columns={columns} rowKey="ID" />
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <Input
+          placeholder="搜索..."
+          value={searchText}
+          onChange={e => setSearchText(e.target.value)}
+        />
+        <Button type="primary" onClick={exportToExcel}>
+          导出Excel
+        </Button>
+      </div>
+      <Table 
+        dataSource={filteredData} 
+        columns={columns} 
+        rowKey="ID" 
+      />
     </div>
   );
 }
