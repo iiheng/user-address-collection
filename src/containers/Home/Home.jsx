@@ -1,36 +1,15 @@
 // 在App.js或其他组件文件中
 import React, { useEffect, useState } from 'react';
-import { Form, Input, Button, Cascader } from 'antd';
+import { Form, Input, Button, Cascader, message } from 'antd';
 
 const Home = () => {
   const [addressOptions, setAddressOptions] = useState([]);
-  const onFinish = (values) => {  
+  const onFinish = (values) => {
     // Using fetch to send a POST request to the local server
-    fetch('http://127.0.0.1:8787', {
-    // fetch('https://adddressapi.gptmanage.top', {
-      method: 'POST', // Specify the method
-      headers: {
-        'Content-Type': 'application/json', // Set the content type header so the server knows to expect JSON
-      },
-      body: JSON.stringify(values), // Convert the JavaScript object to a JSON string
-    })
-    .then(response => {
-      console.log("response",response)
-      if (!response.ok) {
-        // 如果服务器响应不是ok，即HTTP状态码不在200-299范围内，抛出错误
-        throw new Error('Network response was not ok');
-      }
-      return response.json(); // 解析JSON响应并将其转换为JavaScript对象
-    })
-    .then(data => {
-      console.log('Success:', JSON.stringify(data, null, 2)); // 使用JSON.stringify美化输出
-    })
-    .catch((error) => {
-      console.error('Error:', error); // Handle any errors
-    });
+    console.log("values",values)
+    sendData(values)
   };
   
-
   const onFinishFailed = (errorInfo) => {
     console.log('Failed:', errorInfo);
   };
@@ -56,6 +35,44 @@ const Home = () => {
     };
     fetchData();
   }, []);
+
+  const sendData = (data) => {
+    // 解构原始数据
+    const [province, cityOrDistrict, districtProvided] = data.address;
+    const city = districtProvided ? cityOrDistrict : province; // 如果提供了区县信息，则使用城市值，否则复制省份值到城市
+    const district = districtProvided ? districtProvided : cityOrDistrict; // 如果提供了区县信息，则使用该值，否则使用城市/区的值
+
+    const detailAddress = data.DetailAddress;
+    const name = data.Name;
+    const phone = data.Phone;
+    const bankName = data.BankName;
+
+    const requestBody = {
+      address: [province, city, district], // 构建一个符合后端期望的三元素数组
+      DetailAddress: detailAddress,
+      Name: name,
+      Phone: phone,
+      BankName: bankName,
+    };
+
+// 使用requestBody作为请求体进行POST请求
+
+
+// 使用requestBody作为请求体进行POST请求
+
+  
+    // 发送请求
+    fetch('http://127.0.0.1:8787', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    })
+    .then(response => response.json()) // Assuming the server responds with JSON
+    .then(data => message.success("上传成功")) // Handle the response data
+    .catch(error => message.error(`上传失败,${error}`,1)); // Handle any errors
+  };
 
   function transformData(originalData) {
     const transformedData = [];
@@ -119,6 +136,7 @@ const Home = () => {
       >
       <Cascader options={addressOptions} placeholder="请选择地址" />
       </Form.Item>
+      
       <Form.Item
         label="详细地址"
         name="DetailAddress"
@@ -126,6 +144,7 @@ const Home = () => {
       >
         <Input />
       </Form.Item>
+
       <Form.Item
         label="收件人姓名"
         name="Name"
@@ -133,13 +152,27 @@ const Home = () => {
       >
         <Input />
       </Form.Item>
+
       <Form.Item
         label="收件人电话"
         name="Phone"
-        rules={[{ required: true, message: '请输入收件人电话!' }]} // 修改错误提示信息
+        rules={[
+          { required: true, message: '请输入收件人电话!' }, // 原有的必填规则
+          { // 添加的自定义校验规则
+            validator: (_, value) => {
+              const phoneRegex = /^1[3-9]\d{9}$/; // 简单的中国大陆手机号码正则表达式示例
+              if (!value || phoneRegex.test(value)) {
+                return Promise.resolve();
+              }
+              return Promise.reject(new Error('请输入有效的电话号码!'));
+            }
+          }
+        ]}
       >
         <Input />
       </Form.Item>
+
+
       <Form.Item
         label="银行单位名称"
         name="BankName"
@@ -147,6 +180,7 @@ const Home = () => {
       >
         <Input />
       </Form.Item>
+
       <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
         <Button type="primary" htmlType="submit">
           提交
